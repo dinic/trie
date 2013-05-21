@@ -1,55 +1,57 @@
 package trie
 
-import (
-    "errors"
-)
+import "errors"
 
 const (
 	trieMaxQueueSize = 300
 )
 
 var (
-    ErrNotInTable = errors.New("not in character table predefined")
-    ErrDuplicate  = errors.New("duplicate insert")
+	ErrNotInTable = errors.New("not in character table predefined")
+	ErrDuplicate  = errors.New("duplicate insert")
 )
 
 type TrieValue interface {
 }
 
 type TrieNode struct {
-	Value        interface{}
-	failed_clue  *TrieNode
-	next         []*TrieNode
+	Value       interface{}
+	failed_clue *TrieNode
+	next        []*TrieNode
 }
 
 type TrieTree struct {
-	root         TrieNode
-    branch       uint16
-	keynum       int
-    table        [256]uint16
+	root   TrieNode
+	branch uint16
+	keynum int
+	table  [256]uint16
 }
 
+//creat a trie tree, table is the character set predefined, not duplicate
 func NewTrieTree(table []byte) *TrieTree {
 	tt := new(TrieTree)
-    for i := 0; i < 256; i++ {
-        tt.table[i] = 0xffff
-    }
+	for i := 0; i < 256; i++ {
+		tt.table[i] = 0xffff
+	}
 
-    for i, c := range table {
-        tt.table[c] = uint16(i)
-    }
+	for i, c := range table {
+		tt.table[c] = uint16(i)
+	}
 
-    tt.branch = uint16(len(table))
+	tt.branch = uint16(len(table))
 	return tt
 }
 
+//inster a key-value pair
+//return (nil, ErrNotInTable), if key with character not in set
+//return the node and ErrNotInTable, if key is inserted dupliced
 func (tt *TrieTree) Insert(key []byte, value interface{}) (*TrieNode, error) {
 	p := &tt.root
 	for _, c := range key {
-        index := tt.table[c]
-        if index >= tt.branch {
-            return nil, ErrNotInTable
-        }
+		index := tt.table[c]
+		if index >= tt.branch {
+			return nil, ErrNotInTable
+		}
 
 		if p.next == nil {
 			p.next = make([]*TrieNode, tt.branch)
@@ -61,15 +63,16 @@ func (tt *TrieTree) Insert(key []byte, value interface{}) (*TrieNode, error) {
 		p = p.next[index]
 	}
 
-    if p.Value != nil {
-        return p, ErrDuplicate
-    }
+	if p.Value != nil {
+		return p, ErrDuplicate
+	}
 
-    p.Value = value
-    tt.keynum++
+	p.Value = value
+	tt.keynum++
 	return p, nil
 }
 
+//call BuileClue after insert all keys
 func (tt *TrieTree) BuileClue() {
 	root := &tt.root
 	var head, tail int
@@ -115,18 +118,19 @@ func (tt *TrieTree) BuileClue() {
 	}
 }
 
+//return the value if a key was found in block, otherwise return nil
 func (tt *TrieTree) Query(block []byte) interface{} {
 	root := &tt.root
 	p := root
 
 	for _, c := range block {
 		index := tt.table[c]
-        if index >= tt.branch {
-            p = root
-            continue
-        }
+		if index >= tt.branch {
+			p = root
+			continue
+		}
 
-        for p.next == nil {
+		for p.next == nil {
 			if p == root {
 				break
 			}
